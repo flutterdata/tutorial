@@ -105,7 +105,7 @@ AutoDisposeStateNotifierProvider<DataStateNotifier<List<Task>>,
       remote: remote, params: params, headers: headers, syncLocal: syncLocal));
 }
 
-extension TaskX on Task {
+extension TaskDataX on Task {
   /// Initializes "fresh" models (i.e. manually instantiated) to use
   /// [save], [delete] and so on.
   ///
@@ -116,4 +116,8 @@ extension TaskX on Task {
         repository.remoteAdapter.initializeModel(this, save: save);
     return save ? updatedModel : this;
   }
+}
+
+extension TaskDataRepositoryX on Repository<Task> {
+  JSONServerAdapter get jSONServerAdapter => remoteAdapter as JSONServerAdapter;
 }
