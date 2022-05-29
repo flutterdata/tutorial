@@ -21,16 +21,10 @@ class TasksApp extends HookConsumerWidget {
     return MaterialApp(
       home: Scaffold(
         body: Center(
-          child: ref.watch(repositoryInitializerProvider()).when(
+          child: ref.watch(repositoryInitializerProvider).when(
                 error: (error, _) => Text(error.toString()),
                 loading: () => const CircularProgressIndicator(),
-                data: (_) {
-                  final state = ref.tasks.watchAll();
-                  if (state.isLoading) {
-                    return CircularProgressIndicator();
-                  }
-                  return TasksScreen();
-                },
+                data: (_) => TasksScreen(),
               ),
         ),
       ),
@@ -42,25 +36,31 @@ class TasksApp extends HookConsumerWidget {
 class TasksScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.tasks.watchAll(params: {'_limit': 5}, syncLocal: true);
-    final _newTaskController = useTextEditingController();
+    // NOTE: here we could use `ref.tasks.watchAll()` but we
+    // break it down in provider + watch in order to access the
+    // notifier below (onRefresh)
+    final provider =
+        ref.tasks.watchAllProvider(params: {'_limit': 5}, syncLocal: true);
+    final state = ref.watch(provider);
 
     if (state.isLoading) {
       return CircularProgressIndicator();
     }
+
+    final _newTaskController = useTextEditingController();
+
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.tasks.findAll(params: {'_limit': 5}, syncLocal: true),
+      onRefresh: () => ref.read(provider.notifier).reload(),
       child: ListView(
         children: [
           TextField(
             controller: _newTaskController,
             onSubmitted: (value) async {
-              Task(title: value).init(ref.read).save();
+              Task(title: value).save();
               _newTaskController.clear();
             },
           ),
-          for (final task in state.model)
+          for (final task in state.model!)
             Dismissible(
               key: ValueKey(task),
               direction: DismissDirection.endToStart,
@@ -68,7 +68,10 @@ class TasksScreen extends HookConsumerWidget {
               child: ListTile(
                 leading: Checkbox(
                   value: task.completed,
-                  onChanged: (value) => task.toggleCompleted().save(),
+                  onChanged: (value) => task
+                      .copyWith(completed: !task.completed)
+                      .was(task)
+                      .save(),
                 ),
                 title: Text('${task.title} [id: ${task.id}]'),
               ),

@@ -18,45 +18,44 @@ ConfigureRepositoryLocalStorage configureRepositoryLocalStorage = ({FutureFn<Str
     baseDirFn ??= () => '';
   }
   
-  return hiveLocalStorageProvider.overrideWithProvider(Provider(
-        (_) => HiveLocalStorage(baseDirFn: baseDirFn, encryptionKey: encryptionKey, clear: clear)));
-};
-
-// ignore: prefer_function_declarations_over_variables
-RepositoryInitializerProvider repositoryInitializerProvider = (
-        {bool? remote, bool? verbose}) {
-  return _repositoryInitializerProviderFamily(
-      RepositoryInitializerArgs(remote, verbose));
+  return hiveLocalStorageProvider
+    .overrideWithProvider(Provider((ref) => HiveLocalStorage(
+            hive: ref.read(hiveProvider),
+            baseDirFn: baseDirFn,
+            encryptionKey: encryptionKey,
+            clear: clear,
+          )));
 };
 
 final repositoryProviders = <String, Provider<Repository<DataModel>>>{
   'tasks': tasksRepositoryProvider
 };
 
-final _repositoryInitializerProviderFamily =
-  FutureProvider.family<RepositoryInitializer, RepositoryInitializerArgs>((ref, args) async {
-    final adapters = <String, RemoteAdapter>{'tasks': ref.watch(tasksRemoteAdapterProvider)};
+final repositoryInitializerProvider =
+  FutureProvider<RepositoryInitializer>((ref) async {
+    final adapters = <String, RemoteAdapter>{'tasks': ref.watch(internalTasksRemoteAdapterProvider)};
     final remotes = <String, bool>{'tasks': true};
 
     await ref.watch(graphNotifierProvider).initialize();
 
-    final _repoMap = {
-      for (final type in repositoryProviders.keys)
-        [type]: ref.watch(repositoryProviders[type]!)
-    };
-
-    for (final type in _repoMap.keys) {
-      final repository = _repoMap[type]!;
+    // initialize and register
+    for (final type in repositoryProviders.keys) {
+      final repository = ref.read(repositoryProviders[type]!);
       repository.dispose();
       await repository.initialize(
-        remote: args.remote ?? remotes[type],
-        verbose: args.verbose,
+        remote: remotes[type],
         adapters: adapters,
       );
+      internalRepositories[type] = repository;
+    }
+
+    // deferred model initialization
+    for (final repository in internalRepositories.values) {
+      await repository.remoteAdapter.internalInitializeModels();
     }
 
     ref.onDispose(() {
-      for (final repository in _repoMap.values) {
+      for (final repository in internalRepositories.values) {
         repository.dispose();
       }
     });
@@ -68,5 +67,6 @@ extension RepositoryWidgetRefX on WidgetRef {
 }
 
 extension RepositoryRefX on Ref {
+
   Repository<Task> get tasks => watch(tasksRepositoryProvider)..remoteAdapter.internalWatch = watch as Watcher;
 }
