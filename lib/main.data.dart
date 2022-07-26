@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tutorial/models/task.dart';
+import 'package:tutorial/models/user.dart';
 
 // ignore: prefer_function_declarations_over_variables
 ConfigureRepositoryLocalStorage configureRepositoryLocalStorage = ({FutureFn<String>? baseDirFn, List<int>? encryptionKey, bool? clear}) {
@@ -28,13 +29,14 @@ ConfigureRepositoryLocalStorage configureRepositoryLocalStorage = ({FutureFn<Str
 };
 
 final repositoryProviders = <String, Provider<Repository<DataModel>>>{
-  'tasks': tasksRepositoryProvider
+  'tasks': tasksRepositoryProvider,
+'users': usersRepositoryProvider
 };
 
 final repositoryInitializerProvider =
   FutureProvider<RepositoryInitializer>((ref) async {
-    final adapters = <String, RemoteAdapter>{'tasks': ref.watch(internalTasksRemoteAdapterProvider)};
-    final remotes = <String, bool>{'tasks': true};
+    final adapters = <String, RemoteAdapter>{'tasks': ref.watch(internalTasksRemoteAdapterProvider), 'users': ref.watch(internalUsersRemoteAdapterProvider)};
+    final remotes = <String, bool>{'tasks': true, 'users': true};
 
     await ref.watch(graphNotifierProvider).initialize();
 
@@ -49,24 +51,15 @@ final repositoryInitializerProvider =
       internalRepositories[type] = repository;
     }
 
-    // deferred model initialization
-    for (final repository in internalRepositories.values) {
-      await repository.remoteAdapter.internalInitializeModels();
-    }
-
-    ref.onDispose(() {
-      for (final repository in internalRepositories.values) {
-        repository.dispose();
-      }
-    });
-
     return RepositoryInitializer();
 });
 extension RepositoryWidgetRefX on WidgetRef {
   Repository<Task> get tasks => watch(tasksRepositoryProvider)..remoteAdapter.internalWatch = watch;
+  Repository<User> get users => watch(usersRepositoryProvider)..remoteAdapter.internalWatch = watch;
 }
 
 extension RepositoryRefX on Ref {
 
   Repository<Task> get tasks => watch(tasksRepositoryProvider)..remoteAdapter.internalWatch = watch as Watcher;
+  Repository<User> get users => watch(usersRepositoryProvider)..remoteAdapter.internalWatch = watch as Watcher;
 }

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_data/flutter_data.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-
-import 'main.data.dart';
-import 'models/task.dart';
+import 'package:tutorial/main.data.dart';
+import 'package:tutorial/models/task.dart';
+import 'package:tutorial/models/user.dart';
 
 void main() {
   runApp(
     ProviderScope(
       child: TasksApp(),
-      overrides: [configureRepositoryLocalStorage()],
+      overrides: [configureRepositoryLocalStorage(clear: true)],
     ),
   );
 }
@@ -22,10 +22,13 @@ class TasksApp extends HookConsumerWidget {
       home: Scaffold(
         body: Center(
           child: ref.watch(repositoryInitializerProvider).when(
-                error: (error, _) => Text(error.toString()),
-                loading: () => const CircularProgressIndicator(),
-                data: (_) => TasksScreen(),
-              ),
+              error: (error, _) => Text(error.toString()),
+              loading: () => const CircularProgressIndicator(),
+              data: (_) {
+                // enable verbose
+                ref.tasks.logLevel = 2;
+                return TasksScreen();
+              }),
         ),
       ),
       debugShowCheckedModeBanner: false,
@@ -36,31 +39,31 @@ class TasksApp extends HookConsumerWidget {
 class TasksScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // NOTE: here we could use `ref.tasks.watchAll()` but we
-    // break it down in provider + watch in order to access the
-    // notifier below (onRefresh)
-    final provider =
-        ref.tasks.watchAllProvider(params: {'_limit': 5}, syncLocal: true);
-    final state = ref.watch(provider);
+    final _newTaskController = useTextEditingController();
+    final state = ref.users.watchOne(1, // user ID, an integer
+        params: {'_embed': 'tasks'}, // HTTP param
+        alsoWatch: (user) => [user.tasks] // watcher
+        );
 
     if (state.isLoading) {
       return CircularProgressIndicator();
     }
 
-    final _newTaskController = useTextEditingController();
+    final user = state.model!;
+    final tasks = user.tasks.toList();
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(provider.notifier).reload(),
+      onRefresh: () => ref.tasks.findOne(1, params: {'_embed': 'tasks'}),
       child: ListView(
         children: [
           TextField(
             controller: _newTaskController,
             onSubmitted: (value) async {
-              Task(title: value).save();
+              Task(title: value, user: BelongsTo(user)).save();
               _newTaskController.clear();
             },
           ),
-          for (final task in state.model!)
+          for (final task in tasks)
             Dismissible(
               key: ValueKey(task),
               direction: DismissDirection.endToStart,
@@ -68,10 +71,7 @@ class TasksScreen extends HookConsumerWidget {
               child: ListTile(
                 leading: Checkbox(
                   value: task.completed,
-                  onChanged: (value) => task
-                      .copyWith(completed: !task.completed)
-                      .was(task)
-                      .save(),
+                  onChanged: (value) => task.toggleCompleted().save(),
                 ),
                 title: Text('${task.title} [id: ${task.id}]'),
               ),
