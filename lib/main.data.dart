@@ -35,6 +35,8 @@ final repositoryProviders = <String, Provider<Repository<DataModel>>>{
 
 final repositoryInitializerProvider =
   FutureProvider<RepositoryInitializer>((ref) async {
+    DataHelpers.setInternalType<Task>('tasks');
+    DataHelpers.setInternalType<User>('users');
     final adapters = <String, RemoteAdapter>{'tasks': ref.watch(internalTasksRemoteAdapterProvider), 'users': ref.watch(internalUsersRemoteAdapterProvider)};
     final remotes = <String, bool>{'tasks': true, 'users': true};
 
