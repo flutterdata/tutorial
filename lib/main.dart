@@ -10,7 +10,9 @@ void main() {
   runApp(
     ProviderScope(
       child: TasksApp(),
-      overrides: [configureRepositoryLocalStorage(clear: true)],
+      overrides: [
+        configureRepositoryLocalStorage(clear: LocalStorageClearStrategy.always)
+      ],
     ),
   );
 }
@@ -40,17 +42,18 @@ class TasksScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final _newTaskController = useTextEditingController();
-    final state = ref.users.watchOne(1, // user ID, an integer
-        params: {'_embed': 'tasks'}, // HTTP param
-        alsoWatch: (user) => [user.tasks] // watcher
-        );
+    final state = ref.users.watchOne(
+      1, // user ID, an integer
+      params: {'_embed': 'tasks'}, // HTTP param
+      alsoWatch: (user) => [user.tasks], // watcher
+    );
 
     if (state.isLoading) {
       return CircularProgressIndicator();
     }
 
     final user = state.model!;
-    final tasks = user.tasks.toList();
+    final tasks = user.tasks.toList()..sort();
 
     return RefreshIndicator(
       onRefresh: () => ref.tasks.findOne(1, params: {'_embed': 'tasks'}),

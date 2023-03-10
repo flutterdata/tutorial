@@ -6,7 +6,7 @@ part 'task.g.dart';
 
 @JsonSerializable()
 @DataRepository([JsonServerAdapter])
-class Task extends DataModel<Task> {
+class Task extends DataModel<Task> implements Comparable {
   @override
   final int? id;
   final String title;
@@ -26,6 +26,11 @@ class Task extends DataModel<Task> {
             user: user,
             completed: !this.completed)
         .withKeyOf(this);
+  }
+
+  @override
+  int compareTo(other) {
+    return id?.compareTo(other.id ?? double.maxFinite.floor()) ?? -1;
   }
 }
 
