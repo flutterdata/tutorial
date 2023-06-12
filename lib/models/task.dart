@@ -11,6 +11,7 @@ class Task extends DataModel<Task> implements Comparable {
   final int? id;
   final String title;
   final bool completed;
+  @JsonKey(name: 'userId')
   final BelongsTo<User> user;
 
   Task(

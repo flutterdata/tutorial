@@ -11,7 +11,7 @@ void main() {
     ProviderScope(
       child: TasksApp(),
       overrides: [
-        configureRepositoryLocalStorage(clear: LocalStorageClearStrategy.always)
+        configureRepositoryLocalStorage(clear: LocalStorageClearStrategy.never)
       ],
     ),
   );
@@ -29,6 +29,7 @@ class TasksApp extends HookConsumerWidget {
               data: (_) {
                 // enable verbose
                 ref.tasks.logLevel = 2;
+                ref.users.logLevel = 2;
                 return TasksScreen();
               }),
         ),
@@ -62,8 +63,13 @@ class TasksScreen extends HookConsumerWidget {
           TextField(
             controller: _newTaskController,
             onSubmitted: (value) async {
-              Task(title: value, user: BelongsTo(user)).save();
-              _newTaskController.clear();
+              if (value.isNotEmpty) {
+                final task = Task(title: value, user: BelongsTo(user));
+                print('ct user before ${task.user}');
+                final s2 = await task.save();
+                print('ct user after ${s2.user}');
+                _newTaskController.clear();
+              }
             },
           ),
           for (final task in tasks)
@@ -74,9 +80,14 @@ class TasksScreen extends HookConsumerWidget {
               child: ListTile(
                 leading: Checkbox(
                   value: task.completed,
-                  onChanged: (value) => task.toggleCompleted().save(),
+                  onChanged: (value) async {
+                    print('u user before ${task.user}');
+                    final s2 = await task.toggleCompleted().save();
+                    print('u user after ${s2.user}');
+                  },
                 ),
-                title: Text('${task.title} [id: ${task.id}]'),
+                title: Text(
+                    '${task.title} [id: ${task.id} ${DataModel.keyFor(task).detypify()}]'),
               ),
             ),
         ],

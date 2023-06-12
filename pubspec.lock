@@ -234,10 +234,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_data
-      sha256: ea7ceb9598b7d9c202ed7a5c07ef26d0cda793dec1ac42d2106a3128329e3e0a
+      sha256: "93ba6f144a8dff3a394ef554e01f99431ff2f835692e11d73f5a6a0429fc5995"
       url: "https://pub.dev"
     source: hosted
-    version: "1.5.6"
+    version: "1.5.10"
   flutter_hooks:
     dependency: transitive
     description:
