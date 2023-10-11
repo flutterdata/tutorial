@@ -65,9 +65,7 @@ class TasksScreen extends HookConsumerWidget {
             onSubmitted: (value) async {
               if (value.isNotEmpty) {
                 final task = Task(title: value, user: BelongsTo(user));
-                print('ct user before ${task.user}');
-                final s2 = await task.save();
-                print('ct user after ${s2.user}');
+                await task.save();
                 _newTaskController.clear();
               }
             },
@@ -81,9 +79,7 @@ class TasksScreen extends HookConsumerWidget {
                 leading: Checkbox(
                   value: task.completed,
                   onChanged: (value) async {
-                    print('u user before ${task.user}');
-                    final s2 = await task.toggleCompleted().save();
-                    print('u user after ${s2.user}');
+                    await task.toggleCompleted().save();
                   },
                 ),
                 title: Text(

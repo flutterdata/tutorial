@@ -12,7 +12,7 @@ dependencies:
   copy_with_extension: ^4.0.2
   flutter:
     sdk: flutter
-  flutter_data: ^1.5.6
+  flutter_data: ^1.5.14
   hooks_riverpod: ^2.1.1
   json_annotation: ^4.7.0
   path_provider: ^2.0.11
