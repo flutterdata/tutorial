@@ -12,16 +12,15 @@ import 'package:tutorial/models/task.dart';
 import 'package:tutorial/models/user.dart';
 
 // ignore: prefer_function_declarations_over_variables
-ConfigureRepositoryLocalStorage configureRepositoryLocalStorage = ({FutureFn<String>? baseDirFn, List<int>? encryptionKey, LocalStorageClearStrategy? clear}) {
+ConfigureRepositoryLocalStorage configureRepositoryLocalStorage = ({FutureFn<String>? baseDirFn, String? encryptionKey, LocalStorageClearStrategy? clear}) {
   if (!kIsWeb) {
     baseDirFn ??= () => getApplicationDocumentsDirectory().then((dir) => dir.path);
   } else {
     baseDirFn ??= () => '';
   }
   
-  return hiveLocalStorageProvider.overrideWith(
-    (ref) => HiveLocalStorage(
-      hive: ref.read(hiveProvider),
+  return localStorageProvider.overrideWith(
+    (ref) => IsarLocalStorage(
       baseDirFn: baseDirFn,
       encryptionKey: encryptionKey,
       clear: clear,
